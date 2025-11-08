@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  k6-http:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      - BASE_URL=${BASE_URL}
+      - CITY_QUERY=${CITY_QUERY}
+      - VU=${VU:-20}
+      - DURATION=${DURATION:-1m}
+    command: >
+      run --summary-trend-stats=avg,p(90),p(95),max scripts/http/home_search_city.http.js
+
+  k6-browser:
+    image: grafana/k6:master-with-browser
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      - BASE_URL=${BASE_URL}
+      - CITY_QUERY=${CITY_QUERY}
+      - K6_BROWSER_HEADLESS=true
+      - K6_BROWSER_ARGS=--no-sandbox --disable-dev-shm-usage
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp=unconfined
+    command: >
+      run --summary-trend-stats=avg,p(90),p(95),max scripts/browser/holisteek_flow.browser.js
