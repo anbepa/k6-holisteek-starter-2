@@ -77,7 +77,7 @@ jobs:
             --cap-add=SYS_ADMIN \
             --security-opt seccomp=unconfined \
             grafana/k6:master-with-browser \
-            run --summary-trend-stats=avg,p(90),p(95),max \
+            run --summary-trend-stats='avg,p(90),p(95),max' \
             --out influxdb=${{ secrets.INFLUXDB_URL }} \
             scripts/browser/holisteek_flow.browser.js
         env:
