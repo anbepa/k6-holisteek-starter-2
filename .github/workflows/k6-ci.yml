@@ -82,22 +82,75 @@ jobs:
             run --summary-trend-stats='avg,p(90),p(95),max' \
             scripts/browser/holisteek_flow.browser.js
       
+      - name: 🔍 Verificar generación de reporte
+        if: always()
+        run: |
+          echo "📂 Verificando archivos generados..."
+          ls -lah
+          if [ -f report.html ]; then
+            echo "✅ report.html encontrado"
+            ls -lh report.html
+          else
+            echo "❌ report.html NO encontrado"
+            exit 1
+          fi
+      
       - name: ⚠️ Verificar si fallaron thresholds
         if: steps.k6-test.outcome == 'failure'
         run: |
           echo "::warning::⚠️ Los thresholds de k6 fueron superados, pero el test continuó ejecutándose."
           echo "::warning::Revisa el reporte HTML en GitHub Pages para ver los resultados detallados."
 
-      - name: � Desplegar reporte a GitHub Pages
+      - name: 📁 Preparar reporte para GitHub Pages
+        if: always()
+        run: |
+          mkdir -p gh-pages-deploy/reports/${{ github.run_number }}
+          cp report.html gh-pages-deploy/reports/${{ github.run_number }}/
+          
+          # Crear página principal con lista de reportes
+          cat > gh-pages-deploy/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>k6 Test Reports - Holisteek</title>
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+              h1 { color: #333; }
+              .report-card { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+              .report-card a { color: #7d64ff; text-decoration: none; font-weight: bold; }
+              .report-card a:hover { text-decoration: underline; }
+              .meta { color: #666; font-size: 14px; margin-top: 5px; }
+            </style>
+          </head>
+          <body>
+            <h1>📊 k6 Performance Test Reports - Holisteek</h1>
+            <p>Reportes de pruebas de rendimiento del flujo de búsqueda en Holisteek</p>
+            <div class="report-card">
+              <a href="reports/${{ github.run_number }}/report.html">📄 Reporte #${{ github.run_number }}</a>
+              <div class="meta">
+                Ejecutado: ${{ github.event.repository.updated_at }}<br>
+                Commit: ${{ github.sha }}<br>
+                Branch: ${{ github.ref_name }}
+              </div>
+            </div>
+          </body>
+          </html>
+          EOF
+          
+          echo "✅ Reporte copiado a gh-pages-deploy/reports/${{ github.run_number }}/report.html"
+          ls -la gh-pages-deploy/reports/${{ github.run_number }}/
+
+      - name: 📊 Desplegar reporte a GitHub Pages
         if: always()
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
+          publish_dir: ./gh-pages-deploy
           publish_branch: gh-pages
-          keep_files: false
-          destination_dir: reports/${{ github.run_number }}
-          include_assets: report.html
+          keep_files: true
+          force_orphan: false
 
       - name: 📋 Subir Summary JSON
         if: always()
