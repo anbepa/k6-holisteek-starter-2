@@ -60,49 +60,44 @@ jobs:
   k6-browser:
     if: ${{ github.event.inputs.run_browser == 'true' || github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: 📁 Crear directorio de screenshots
-        run: mkdir -p screenshots
 
       - name: 🚀 Run k6 Browser Test
         continue-on-error: true
         id: k6-test
-        env:
-          K6_INFLUXDB_ORGANIZATION: ${{ secrets.INFLUXDB_ORG }}
-          K6_INFLUXDB_BUCKET: ${{ secrets.INFLUXDB_BUCKET }}
-          K6_INFLUXDB_TOKEN: ${{ secrets.INFLUXDB_TOKEN }}
         run: |
           docker run --rm \
             -e K6_BROWSER_HEADLESS=true \
             -e K6_BROWSER_ARGS='--no-sandbox --disable-dev-shm-usage' \
             -e BASE_URL="${{ github.event.inputs.base_url || 'https://www.holisteek.com' }}" \
             -e CITY_QUERY="${{ github.event.inputs.city_query || 'London' }}" \
-            -e K6_INFLUXDB_ORGANIZATION="${K6_INFLUXDB_ORGANIZATION}" \
-            -e K6_INFLUXDB_BUCKET="${K6_INFLUXDB_BUCKET}" \
-            -e K6_INFLUXDB_TOKEN="${K6_INFLUXDB_TOKEN}" \
             -v "$PWD:/work" -w /work \
             --cap-add=SYS_ADMIN \
             --security-opt seccomp=unconfined \
             grafana/k6:master-with-browser \
             run --summary-trend-stats='avg,p(90),p(95),max' \
-            --out influxdb=${{ secrets.INFLUXDB_URL }} \
             scripts/browser/holisteek_flow.browser.js
       
       - name: ⚠️ Verificar si fallaron thresholds
         if: steps.k6-test.outcome == 'failure'
         run: |
           echo "::warning::⚠️ Los thresholds de k6 fueron superados, pero el test continuó ejecutándose."
-          echo "::warning::Revisa Grafana para ver los resultados detallados."
+          echo "::warning::Revisa el reporte HTML en GitHub Pages para ver los resultados detallados."
 
-      - name: 📸 Subir Screenshots
+      - name: � Desplegar reporte a GitHub Pages
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: k6-browser-screenshots
-          path: screenshots/
-          retention-days: 30
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          keep_files: false
+          destination_dir: reports/${{ github.run_number }}
+          include_assets: report.html
 
       - name: 📋 Subir Summary JSON
         if: always()
@@ -148,8 +143,8 @@ jobs:
               summary += `- **CLS:** ${(m.browser_web_vital_cls?.values?.avg || 0).toFixed(6)}\n`;
               summary += `- **FID:** ${(m.browser_web_vital_fid?.values?.avg || 0).toFixed(2)}ms\n\n`;
               
-              summary += `� **[Ver dashboard completo en Grafana →](https://grafana.com)**\n`;
-              summary += `� Los datos se guardaron automáticamente en InfluxDB\n`;
+              const reportUrl = `https://${context.repo.owner}.github.io/${context.repo.repo}/reports/${context.runNumber}/report.html`;
+              summary += `📊 **[Ver Reporte Completo HTML →](${reportUrl})**\n`;
               
             } catch (error) {
               summary += `⚠️ Error al leer summary.json: ${error.message}\n`;
