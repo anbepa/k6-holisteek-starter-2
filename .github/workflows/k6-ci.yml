@@ -66,7 +66,7 @@ jobs:
       - name: 📁 Crear directorio de screenshots
         run: mkdir -p screenshots
 
-      - name: 🚀 Run k6 Browser Test con InfluxDB
+      - name: 🚀 Run k6 Browser Test
         run: |
           docker run --rm \
             -e K6_BROWSER_HEADLESS=true \
@@ -78,13 +78,7 @@ jobs:
             --security-opt seccomp=unconfined \
             grafana/k6:master-with-browser \
             run --summary-trend-stats='avg,p(90),p(95),max' \
-            --out influxdb=${{ secrets.INFLUXDB_URL }} \
             scripts/browser/holisteek_flow.browser.js
-        env:
-          K6_INFLUXDB_ORGANIZATION: ${{ secrets.INFLUXDB_ORG }}
-          K6_INFLUXDB_BUCKET: ${{ secrets.INFLUXDB_BUCKET }}
-          K6_INFLUXDB_TOKEN: ${{ secrets.INFLUXDB_TOKEN }}
-          K6_INFLUXDB_INSECURE: ${{ secrets.INFLUXDB_INSECURE || 'false' }}
 
       - name: 📊 Subir Reporte HTML
         if: always()
