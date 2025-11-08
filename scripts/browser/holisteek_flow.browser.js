@@ -175,8 +175,11 @@ export default async function () {
 }
 
 export function handleSummary(data) {
+  console.log('📝 Generando reportes...');
+  
   return {
     'report.html': htmlReport(data),
+    'summary.json': JSON.stringify(data),
     'stdout': textSummary(data, { indent: ' ', enableColors: true }),
   };
 }

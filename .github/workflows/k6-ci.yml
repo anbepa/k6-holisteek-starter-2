@@ -70,6 +70,10 @@ jobs:
         continue-on-error: true
         id: k6-test
         run: |
+          echo "📂 Directorio actual antes de k6:"
+          pwd
+          ls -la
+          
           docker run --rm \
             -e K6_BROWSER_HEADLESS=true \
             -e K6_BROWSER_ARGS='--no-sandbox --disable-dev-shm-usage' \
@@ -81,18 +85,27 @@ jobs:
             grafana/k6:master-with-browser \
             run --summary-trend-stats='avg,p(90),p(95),max' \
             scripts/browser/holisteek_flow.browser.js
+          
+          echo "📂 Directorio actual después de k6:"
+          pwd
+          ls -la
       
       - name: 🔍 Verificar generación de reporte
         if: always()
         run: |
           echo "📂 Verificando archivos generados..."
           ls -lah
+          echo ""
+          echo "🔍 Buscando report.html..."
+          find . -name "report.html" -type f || echo "No se encontró report.html en ningún lugar"
+          echo ""
           if [ -f report.html ]; then
-            echo "✅ report.html encontrado"
+            echo "✅ report.html encontrado en directorio raíz"
             ls -lh report.html
           else
-            echo "❌ report.html NO encontrado"
-            exit 1
+            echo "⚠️ report.html NO encontrado en directorio raíz"
+            echo "Intentando buscar en subdirectorios..."
+            find . -name "*.html" -type f
           fi
       
       - name: ⚠️ Verificar si fallaron thresholds
@@ -104,6 +117,12 @@ jobs:
       - name: 📁 Preparar reporte para GitHub Pages
         if: always()
         run: |
+          if [ ! -f report.html ]; then
+            echo "❌ ERROR: report.html no fue generado por k6"
+            echo "Verificando logs del contenedor..."
+            exit 1
+          fi
+          
           mkdir -p gh-pages-deploy/reports/${{ github.run_number }}
           cp report.html gh-pages-deploy/reports/${{ github.run_number }}/
           
