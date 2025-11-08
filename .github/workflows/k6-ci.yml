@@ -70,6 +70,9 @@ jobs:
         continue-on-error: true
         id: k6-test
         run: |
+          # Dar permisos de escritura para que k6 (ejecutándose como root en container) pueda crear archivos
+          chmod 777 .
+          
           docker run --rm \
             -e K6_BROWSER_HEADLESS=true \
             -e K6_BROWSER_ARGS='--no-sandbox --disable-dev-shm-usage' \
@@ -81,9 +84,6 @@ jobs:
             grafana/k6:master-with-browser \
             run --summary-trend-stats='avg,p(90),p(95),max' \
             scripts/browser/holisteek_flow.browser.js
-          
-          # Cambiar permisos de archivos generados por k6 para que el runner pueda leerlos
-          sudo chown -R runner:docker . || true
           
           echo "✅ Test k6 completado"
           ls -la report.html summary.json
