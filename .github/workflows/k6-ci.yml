@@ -63,35 +63,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 📁 Crear directorios y dar permisos
-        run: |
-          mkdir -p screenshots
-          chmod 777 screenshots
-          touch report.html summary.json
-          chmod 666 report.html summary.json
+      - name: 📁 Crear directorio de screenshots
+        run: mkdir -p screenshots
 
-      - name: � Construir imagen k6 personalizada
-        run: docker build -t k6-custom:latest .
-
-      - name: �🚀 Run k6 Browser Test con InfluxDB v2
+      - name: 🚀 Run k6 Browser Test con InfluxDB
         run: |
           docker run --rm \
             -e K6_BROWSER_HEADLESS=true \
             -e K6_BROWSER_ARGS='--no-sandbox --disable-dev-shm-usage' \
             -e BASE_URL="${{ github.event.inputs.base_url || 'https://www.holisteek.com' }}" \
             -e CITY_QUERY="${{ github.event.inputs.city_query || 'London' }}" \
-            -e K6_INFLUXDB_ORGANIZATION="${{ secrets.INFLUXDB_ORG }}" \
-            -e K6_INFLUXDB_BUCKET="${{ secrets.INFLUXDB_BUCKET }}" \
-            -e K6_INFLUXDB_TOKEN="${{ secrets.INFLUXDB_TOKEN }}" \
-            -e K6_INFLUXDB_INSECURE="${{ secrets.INFLUXDB_INSECURE || 'false' }}" \
             -v "$PWD:/work" -w /work \
-            -u $(id -u):$(id -g) \
             --cap-add=SYS_ADMIN \
             --security-opt seccomp=unconfined \
-            k6-custom:latest \
+            grafana/k6:master-with-browser \
             run --summary-trend-stats='avg,p(90),p(95),max' \
-            --out xk6-influxdb=${{ secrets.INFLUXDB_URL }} \
+            --out influxdb=${{ secrets.INFLUXDB_URL }} \
             scripts/browser/holisteek_flow.browser.js
+        env:
+          K6_INFLUXDB_ORGANIZATION: ${{ secrets.INFLUXDB_ORG }}
+          K6_INFLUXDB_BUCKET: ${{ secrets.INFLUXDB_BUCKET }}
+          K6_INFLUXDB_TOKEN: ${{ secrets.INFLUXDB_TOKEN }}
+          K6_INFLUXDB_INSECURE: ${{ secrets.INFLUXDB_INSECURE || 'false' }}
 
       - name: 📊 Subir Reporte HTML
         if: always()
