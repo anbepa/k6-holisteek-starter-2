@@ -1,0 +1,10 @@
+{
+  "name": "k6-holisteek-starter",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Starter de k6 + k6-browser para Holisteek (grabaci\u00f3n via HAR, reportes HTML, GitHub Actions)",
+  "scripts": {
+    "har:convert": "npx @grafana/har-to-k6 holisteek.har -o scripts/http/holisteek_from_har.http.js"
+  },
+  "devDependencies": {}
+}

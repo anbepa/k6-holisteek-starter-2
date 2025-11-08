@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# k6 outputs
+report.html
+summary.txt
+*.har
+screenshots/*.png
+!screenshots/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Env files
+.env
+.env.local
