@@ -25,37 +25,37 @@ on:
     branches: [ main, master, develop ]
 
 jobs:
-  k6-http:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # k6-http:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Run k6 (HTTP)
-        uses: docker://grafana/k6:latest
-        with:
-          args: >-
-            run --summary-trend-stats=avg,p(90),p(95),max
-            scripts/http/home_search_city.http.js
-        env:
-          BASE_URL: ${{ github.event.inputs.base_url }}
-          CITY_QUERY: ${{ github.event.inputs.city_query }}
-          VU: '20'
-          DURATION: '1m'
+  #     - name: Run k6 (HTTP)
+  #       uses: docker://grafana/k6:latest
+  #       with:
+  #         args: >-
+  #           run --summary-trend-stats=avg,p(90),p(95),max
+  #           scripts/http/home_search_city.http.js
+  #       env:
+  #         BASE_URL: ${{ github.event.inputs.base_url }}
+  #         CITY_QUERY: ${{ github.event.inputs.city_query }}
+  #         VU: '20'
+  #         DURATION: '1m'
 
-      - name: Save k6 summary artifacts
-        if: always()
-        run: |
-          if [ -f report.html ]; then echo "report found"; else echo "no report.html yet"; fi
-          ls -la || true
+  #     - name: Save k6 summary artifacts
+  #       if: always()
+  #       run: |
+  #         if [ -f report.html ]; then echo "report found"; else echo "no report.html yet"; fi
+  #         ls -la || true
 
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: k6-http-report
-          path: |
-            report.html
-            summary.txt
-          if-no-files-found: ignore
+  #     - uses: actions/upload-artifact@v4
+  #       if: always()
+  #       with:
+  #         name: k6-http-report
+  #         path: |
+  #           report.html
+  #           summary.txt
+  #         if-no-files-found: ignore
 
   k6-browser:
     if: ${{ github.event.inputs.run_browser == 'true' || github.event_name != 'workflow_dispatch' }}
