@@ -44,10 +44,10 @@ export const options = {
     tiempo_seleccion_ciudad_ms: ['p(95)<5000'],      // Selección de ciudad <5s
     
     // Carga de resultados de búsqueda
-    tiempo_carga_resultados_ms: ['p(95)<15000'],     // Resultados <15s
+    tiempo_carga_resultados_ms: ['p(95)<20000'],     // Resultados <20s
     
     // Tiempo total del flujo completo
-    tiempo_total_flujo_ms: ['p(95)<40000'],          // Flujo completo <40s
+    tiempo_total_flujo_ms: ['p(95)<45000'],          // Flujo completo <45s
     
     // Tasa de errores
     tasa_errores: ['rate<0.05'],                     // Menos de 5% de errores

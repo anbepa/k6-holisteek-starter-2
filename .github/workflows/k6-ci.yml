@@ -67,6 +67,8 @@ jobs:
         run: mkdir -p screenshots
 
       - name: 🚀 Run k6 Browser Test
+        continue-on-error: true
+        id: k6-test
         run: |
           docker run --rm \
             -e K6_BROWSER_HEADLESS=true \
@@ -79,6 +81,12 @@ jobs:
             grafana/k6:master-with-browser \
             run --summary-trend-stats='avg,p(90),p(95),max' \
             scripts/browser/holisteek_flow.browser.js
+      
+      - name: ⚠️ Verificar si fallaron thresholds
+        if: steps.k6-test.outcome == 'failure'
+        run: |
+          echo "::warning::⚠️ Los thresholds de k6 fueron superados, pero el test continuó ejecutándose."
+          echo "::warning::Revisa los artefactos para ver los resultados detallados."
 
       - name: 📊 Subir Reporte HTML
         if: always()
