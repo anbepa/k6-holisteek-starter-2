@@ -76,9 +76,8 @@ export default async function () {
     const tiempoCargaHome = Date.now() - inicioCargaHome;
     carga_pagina_home.add(tiempoCargaHome);
     
-    await page.screenshot({ path: 'screenshots/01-home.png' });
+    // await page.screenshot({ path: 'screenshots/01-home.png' });
     console.log(`✅ Página cargada en ${tiempoCargaHome}ms`);
-    console.log('📸 Screenshot: 01-home.png');
     
     // Validación: Verificar que el título contiene "Holisteek"
     const title = await page.title();
@@ -93,14 +92,12 @@ export default async function () {
     
     // Hacer clic en el campo de ubicación
     await page.getByRole('combobox', { name: 'City or leave empty for nearby' }).click();
-    await page.screenshot({ path: 'screenshots/02-location-clicked.png' });
-    console.log('📸 Screenshot: 02-location-clicked.png');
+    // await page.screenshot({ path: 'screenshots/02-location-clicked.png' });
     
     // Escribir "Lond" en el campo de ubicación
     await page.getByRole('combobox', { name: 'City or leave empty for nearby' }).fill(CONFIG.searchCity);
-    await page.screenshot({ path: 'screenshots/03-lond-typed.png' });
+    // await page.screenshot({ path: 'screenshots/03-lond-typed.png' });
     console.log(`⌨️  Texto escrito: "${CONFIG.searchCity}"`);
-    console.log('📸 Screenshot: 03-lond-typed.png');
     
     // Esperar a que aparezcan las sugerencias
     await page.waitForTimeout(CONFIG.timeouts.suggestions);
@@ -110,9 +107,8 @@ export default async function () {
     const tiempoSeleccionCiudad = Date.now() - inicioSeleccionCiudad;
     tiempo_seleccion_ciudad.add(tiempoSeleccionCiudad);
     
-    await page.screenshot({ path: 'screenshots/04-london-selected.png' });
+    // await page.screenshot({ path: 'screenshots/04-london-selected.png' });
     console.log(`✅ Ciudad seleccionada en ${tiempoSeleccionCiudad}ms: "${CONFIG.expectedCityOption}"`);
-    console.log('📸 Screenshot: 04-london-selected.png');
 
     // ---- 3. EJECUTAR BÚSQUEDA ----
     console.log('\n🔎 Paso 3: Ejecutando búsqueda...');
@@ -128,9 +124,8 @@ export default async function () {
     const tiempoCargaResultados = Date.now() - inicioCargaResultados;
     tiempo_carga_resultados.add(tiempoCargaResultados);
     
-    await page.screenshot({ path: 'screenshots/05-results.png' });
+    // await page.screenshot({ path: 'screenshots/05-results.png' });
     console.log(`✅ Resultados cargados en ${tiempoCargaResultados}ms`);
-    console.log('📸 Screenshot: 05-results.png');
     
     // ---- 5. VALIDACIONES FINALES ----
     console.log('\n✔️  Paso 5: Validando resultados...');
@@ -149,8 +144,7 @@ export default async function () {
     });
     if (!validacionUrl) tasa_errores.add(1);
     
-    await page.screenshot({ path: 'screenshots/06-final.png' });
-    console.log('📸 Screenshot: 06-final.png');
+    // await page.screenshot({ path: 'screenshots/06-final.png' });
     
     // ---- RESUMEN FINAL ----
     const tiempoTotalFlujo = Date.now() - inicioFlujoCompleto;
@@ -165,12 +159,11 @@ export default async function () {
 
   } catch (err) {
     tasa_errores.add(1);
-    await page.screenshot({ path: 'screenshots/99-error.png' }).catch(() => {});
+    // await page.screenshot({ path: 'screenshots/99-error.png' }).catch(() => {});
     console.log('\n' + '⚠️ '.repeat(30));
     console.log('❌ ERROR EN LA EJECUCIÓN DEL TEST');
     console.log('⚠️ '.repeat(30));
     console.log(`💥 Error: ${err.message}`);
-    console.log(`📸 Screenshot de error guardado: screenshots/99-error.png`);
     console.log('⚠️ '.repeat(30) + '\n');
     throw err;
   } finally {
@@ -183,11 +176,6 @@ export default async function () {
 
 export function handleSummary(data) {
   return {
-    'report.html': htmlReport(data, { 
-      title: '📊 Reporte de Prueba Browser - Holisteek',
-      description: 'Prueba de flujo de búsqueda por ubicación (Londres) en Holisteek.com'
-    }),
-    'summary.json': JSON.stringify(data, null, 2),
     stdout: textSummary(data, { indent: ' ', enableColors: true }),
   };
 }
