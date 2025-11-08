@@ -69,32 +69,32 @@ jobs:
       - name: 🚀 Run k6 Browser Test
         continue-on-error: true
         id: k6-test
+        env:
+          K6_INFLUXDB_ORGANIZATION: ${{ secrets.INFLUXDB_ORG }}
+          K6_INFLUXDB_BUCKET: ${{ secrets.INFLUXDB_BUCKET }}
+          K6_INFLUXDB_TOKEN: ${{ secrets.INFLUXDB_TOKEN }}
         run: |
           docker run --rm \
             -e K6_BROWSER_HEADLESS=true \
             -e K6_BROWSER_ARGS='--no-sandbox --disable-dev-shm-usage' \
             -e BASE_URL="${{ github.event.inputs.base_url || 'https://www.holisteek.com' }}" \
             -e CITY_QUERY="${{ github.event.inputs.city_query || 'London' }}" \
+            -e K6_INFLUXDB_ORGANIZATION="${K6_INFLUXDB_ORGANIZATION}" \
+            -e K6_INFLUXDB_BUCKET="${K6_INFLUXDB_BUCKET}" \
+            -e K6_INFLUXDB_TOKEN="${K6_INFLUXDB_TOKEN}" \
             -v "$PWD:/work" -w /work \
             --cap-add=SYS_ADMIN \
             --security-opt seccomp=unconfined \
             grafana/k6:master-with-browser \
             run --summary-trend-stats='avg,p(90),p(95),max' \
+            --out influxdb=${{ secrets.INFLUXDB_URL }} \
             scripts/browser/holisteek_flow.browser.js
       
       - name: ⚠️ Verificar si fallaron thresholds
         if: steps.k6-test.outcome == 'failure'
         run: |
           echo "::warning::⚠️ Los thresholds de k6 fueron superados, pero el test continuó ejecutándose."
-          echo "::warning::Revisa los artefactos para ver los resultados detallados."
-
-      - name: 📊 Subir Reporte HTML
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: k6-browser-report-html
-          path: report.html
-          retention-days: 30
+          echo "::warning::Revisa Grafana para ver los resultados detallados."
 
       - name: 📸 Subir Screenshots
         if: always()
@@ -148,8 +148,8 @@ jobs:
               summary += `- **CLS:** ${(m.browser_web_vital_cls?.values?.avg || 0).toFixed(6)}\n`;
               summary += `- **FID:** ${(m.browser_web_vital_fid?.values?.avg || 0).toFixed(2)}ms\n\n`;
               
-              summary += `📎 [Ver reporte HTML](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})\n`;
-              summary += `📊 [Ver en Grafana](${process.env.GRAFANA_URL || 'http://localhost:3000'})\n`;
+              summary += `� **[Ver dashboard completo en Grafana →](https://grafana.com)**\n`;
+              summary += `� Los datos se guardaron automáticamente en InfluxDB\n`;
               
             } catch (error) {
               summary += `⚠️ Error al leer summary.json: ${error.message}\n`;
