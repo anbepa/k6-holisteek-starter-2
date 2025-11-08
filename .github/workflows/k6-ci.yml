@@ -70,24 +70,23 @@ jobs:
         continue-on-error: true
         id: k6-test
         run: |
-          # Dar permisos de escritura al directorio
-          chmod -R 777 .
-          
           docker run --rm \
             -e K6_BROWSER_HEADLESS=true \
             -e K6_BROWSER_ARGS='--no-sandbox --disable-dev-shm-usage' \
             -e BASE_URL="${{ github.event.inputs.base_url || 'https://www.holisteek.com' }}" \
             -e CITY_QUERY="${{ github.event.inputs.city_query || 'London' }}" \
             -v "$PWD:/work" -w /work \
-            --user "$(id -u):$(id -g)" \
             --cap-add=SYS_ADMIN \
             --security-opt seccomp=unconfined \
             grafana/k6:master-with-browser \
             run --summary-trend-stats='avg,p(90),p(95),max' \
             scripts/browser/holisteek_flow.browser.js
           
+          # Cambiar permisos de archivos generados por k6 para que el runner pueda leerlos
+          sudo chown -R runner:docker . || true
+          
           echo "✅ Test k6 completado"
-          ls -la
+          ls -la report.html summary.json
       
       - name: 🔍 Verificar generación de reporte
         if: always()
@@ -160,15 +159,36 @@ jobs:
           echo "✅ Reporte copiado a gh-pages-deploy/reports/${{ github.run_number }}/report.html"
           ls -la gh-pages-deploy/reports/${{ github.run_number }}/
 
-      - name: 📊 Desplegar reporte a GitHub Pages
+      - name: 📊 Deploy to GitHub Pages
         if: always()
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./gh-pages-deploy
-          publish_branch: gh-pages
+          publish_dir: ./reports/${{ github.run_number }}
+          destination_dir: reports/${{ github.run_number }}
           keep_files: true
-          force_orphan: false
+
+      - name: 📝 Generate Report URL
+        if: always()
+        run: |
+          REPORT_URL="https://anbepa.github.io/k6-holisteek-starter-2/reports/${{ github.run_number }}/report.html"
+          echo "REPORT_URL=$REPORT_URL" >> $GITHUB_ENV
+          echo "### 📊 Reporte de Pruebas k6" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **URL del Reporte:** [$REPORT_URL]($REPORT_URL)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Run Number: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          
+      - name: 🎯 Upload Report as Artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-html-report-${{ github.run_number }}
+          path: |
+            report.html
+            summary.json
+          retention-days: 30
 
       - name: 📋 Subir Summary JSON
         if: always()
