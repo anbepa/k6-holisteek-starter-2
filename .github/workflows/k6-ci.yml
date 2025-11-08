@@ -164,8 +164,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./reports/${{ github.run_number }}
-          destination_dir: reports/${{ github.run_number }}
+          publish_dir: ./gh-pages-deploy
           keep_files: true
 
       - name: 📝 Generate Report URL
