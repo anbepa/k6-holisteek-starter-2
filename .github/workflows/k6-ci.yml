@@ -70,9 +70,8 @@ jobs:
         continue-on-error: true
         id: k6-test
         run: |
-          echo "📂 Directorio actual antes de k6:"
-          pwd
-          ls -la
+          # Dar permisos de escritura al directorio
+          chmod -R 777 .
           
           docker run --rm \
             -e K6_BROWSER_HEADLESS=true \
@@ -80,14 +79,14 @@ jobs:
             -e BASE_URL="${{ github.event.inputs.base_url || 'https://www.holisteek.com' }}" \
             -e CITY_QUERY="${{ github.event.inputs.city_query || 'London' }}" \
             -v "$PWD:/work" -w /work \
+            --user "$(id -u):$(id -g)" \
             --cap-add=SYS_ADMIN \
             --security-opt seccomp=unconfined \
             grafana/k6:master-with-browser \
             run --summary-trend-stats='avg,p(90),p(95),max' \
             scripts/browser/holisteek_flow.browser.js
           
-          echo "📂 Directorio actual después de k6:"
-          pwd
+          echo "✅ Test k6 completado"
           ls -la
       
       - name: 🔍 Verificar generación de reporte
