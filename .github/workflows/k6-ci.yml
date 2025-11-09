@@ -17,7 +17,12 @@ on:
         default: 'true'
   # Programa automático para ejecutar tests periódicamente
   schedule:
-    - cron: "0 9 * * *"  # Diario a las 9 AM UTC
+    - cron: "0 8 * * *"   # Mañana 1: 8:00 AM UTC
+    - cron: "0 10 * * *"  # Mañana 2: 10:00 AM UTC
+    - cron: "0 12 * * *"  # Mediodía 1: 12:00 PM UTC
+    - cron: "0 14 * * *"  # Mediodía 2: 2:00 PM UTC
+    - cron: "0 17 * * *"  # Tarde 1: 5:00 PM UTC
+    - cron: "0 19 * * *"  # Tarde 2: 7:00 PM UTC
   # Ejecutar en cada push/PR
   push:
     branches: [ main, master, develop ]
