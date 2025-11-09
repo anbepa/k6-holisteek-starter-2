@@ -81,14 +81,11 @@ jobs:
           docker run --rm \
             -e K6_BROWSER_HEADLESS=true \
             -e K6_BROWSER_ARGS='--no-sandbox --disable-dev-shm-usage' \
-            -e BASE_URL="${{ github.event.inputs.base_url || 'https://www.holisteek.com' }}" \
-            -e CITY_QUERY="${{ github.event.inputs.city_query || 'London' }}" \
             -v "$PWD:/work" -w /work \
             --cap-add=SYS_ADMIN \
             --security-opt seccomp=unconfined \
             grafana/k6:master-with-browser \
-            run --summary-trend-stats='avg,p(90),p(95),max' \
-            scripts/browser/holisteek_flow.browser.js
+            run scripts/browser/holisteek_flow.browser.js
           
           echo "✅ Test k6 completado"
           ls -la report.html summary.json
