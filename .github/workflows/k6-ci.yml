@@ -15,14 +15,9 @@ on:
         description: 'Ejecutar suite de navegador (true/false)'
         required: true
         default: 'true'
-  # Programa automático para ejecutar tests periódicamente
+  # Programa automático para ejecutar tests cada 2 horas
   schedule:
-    - cron: "0 8 * * *"   # Mañana 1: 8:00 AM UTC
-    - cron: "0 10 * * *"  # Mañana 2: 10:00 AM UTC
-    - cron: "0 12 * * *"  # Mediodía 1: 12:00 PM UTC
-    - cron: "0 14 * * *"  # Mediodía 2: 2:00 PM UTC
-    - cron: "0 17 * * *"  # Tarde 1: 5:00 PM UTC
-    - cron: "0 19 * * *"  # Tarde 2: 7:00 PM UTC
+    - cron: "0 */2 * * *"  # Cada 2 horas (00:00, 02:00, 04:00, 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 UTC)
   # Ejecutar en cada push/PR
   push:
     branches: [ main, master, develop ]
