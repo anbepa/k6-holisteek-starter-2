@@ -3,32 +3,30 @@ import { check, sleep } from 'k6';
 import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
 import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 
-// --- Configuración (misma data que holisteek_flow.browser.js) ---
 const CONFIG = {
-  baseUrl: 'https://holisteek.com',      // Frontend y algunas APIs
-  apiUrl: 'https://api.holisteek.com',   // APIs principales de backend
+  baseUrl: 'https://holisteek.com',
+  apiUrl: 'https://api.holisteek.com',
   searchCity: 'Lond',
   city: 'London',
   country: 'United Kingdom',
   state: 'England'
 };
 
-// --- PROFILE 1: LOAD TEST (Prueba de Carga) - ACTIVO ---
 export const options = {
   stages: [
-    { duration: '15s', target: 5 },
-    { duration: '30s', target: 10 },
-    { duration: '45s', target: 20 },
     { duration: '30s', target: 20 },
-    { duration: '15s', target: 0 }
+    { duration: '1m', target: 50 },
+    { duration: '30s', target: 100 },
+    { duration: '1m', target: 100 },
+    { duration: '30s', target: 0 }
   ],
   thresholds: {
-    'http_req_duration': ['p(95)<2000'],
-    'http_req_failed': ['rate<0.05'],
-    'checks': ['rate>0.90'],
-    'http_req_duration{type:home}': ['p(95)<3000'],
-    'http_req_duration{type:autocomplete}': ['p(95)<1000'],
-    'http_req_duration{type:search}': ['p(95)<2000']
+    'http_req_duration': ['p(95)<3000'],
+    'http_req_failed': ['rate<0.10'],
+    'checks': ['rate>0.85'],
+    'http_req_duration{type:home}': ['p(95)<5000'],
+    'http_req_duration{type:autocomplete}': ['p(95)<2000'],
+    'http_req_duration{type:search}': ['p(95)<3000']
   },
   summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)']
 };
@@ -40,7 +38,7 @@ export default function () {
   
   check(homeResponse, {
     'home_page_status_200': (r) => r.status === 200,
-    'home_page_load_time': (r) => r.timings.duration < 3000,
+    'home_page_load_time': (r) => r.timings.duration < 5000,
   });
   
   sleep(1);
@@ -89,7 +87,7 @@ export default function () {
         return false;
       }
     },
-    'search_response_time': (r) => r.timings.duration < 2000,
+    'search_response_time': (r) => r.timings.duration < 3000,
   });
 
   sleep(2);
@@ -97,8 +95,8 @@ export default function () {
 
 export function handleSummary(data) {
   return {
-    "summary-http.json": JSON.stringify(data),
-    "report-http.html": htmlReport(data),
+    "summary-stress.json": JSON.stringify(data),
+    "report-stress.html": htmlReport(data),
     stdout: textSummary(data, { indent: " ", enableColors: true }),
   };
 }

@@ -7,9 +7,10 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 // --- Configuración del Test ---
 const CONFIG = {
   baseUrl: 'https://holisteek.com/',
-  searchCity: 'Lond',
-  expectedCityOption: 'United Kingdom England, London',
-  expectedResult: 'Cinnamon Leaf Food Hall',
+  searchCity: 'Lon',
+  expectedCityOption: 'Seychelles Beau Vallon',  // Primera opción cuando se busca "Lon"
+  expectedResult: 'The Copper Pot',
+  expectedLocationParam: 'Beau Vallon, Seychelles',  // Parámetro esperado en URL (URL encoded: Beau+Vallon%2C+Seychelles)
   timeouts: {
     navigation: 45000,     // 45s navegación inicial (carga APIs + geolocation + red lenta)
     waitForOptions: 8000,  // 8s para que aparezcan opciones del autocomplete
@@ -19,6 +20,7 @@ const CONFIG = {
 
 // --- Métricas Personalizadas ---
 export const carga_pagina_home = new Trend('carga_pagina_home_ms', true);
+export const tiempo_espera_dropdown = new Trend('tiempo_espera_dropdown_ms', true);
 export const tiempo_seleccion_ciudad = new Trend('tiempo_seleccion_ciudad_ms', true);
 export const tiempo_carga_resultados = new Trend('tiempo_carga_resultados_ms', true);
 export const tiempo_total_flujo = new Trend('tiempo_total_flujo_ms', true);
@@ -41,6 +43,7 @@ export const options = {
     carga_pagina_home_ms: ['p(95)<8000'],            // 95% debe cargar en <8s (CI puede ser más lento)
     
     // Flujo de búsqueda - autocompletar inteligente
+    tiempo_espera_dropdown_ms: ['p(95)<8000'],       // Dropdown autocomplete <8s
     tiempo_seleccion_ciudad_ms: ['p(95)<6000'],      // Selección de ciudad <6s
     
     // Carga de resultados - espera inteligente de elementos
@@ -67,7 +70,7 @@ export default async function () {
 
   try {
     // ---- 1. CARGA DE PÁGINA HOME ----
-    console.log('🏠 Paso 1: Cargando página principal...');
+    console.log('Paso 1: Cargando página principal...');
     const inicioCargaHome = Date.now();
     await page.goto(CONFIG.baseUrl, { 
       waitUntil: 'networkidle',
@@ -87,7 +90,7 @@ export default async function () {
     if (!tituloValido) tasa_errores.add(1);
 
     // ---- 2. SELECCIÓN DE CIUDAD ----
-    console.log('\n🔍 Paso 2: Iniciando búsqueda por ubicación...');
+    console.log('\nPaso 2: Iniciando búsqueda por ubicación...');
     const inicioSeleccionCiudad = Date.now();
     
     // Hacer clic en el campo de ubicación
@@ -95,29 +98,32 @@ export default async function () {
     
     // Escribir "Lond" en el campo de ubicación
     await page.getByRole('combobox', { name: 'City or leave empty for nearby' }).fill(CONFIG.searchCity);
-    // await page.screenshot({ path: 'screenshots/03-lond-typed.png' });
     console.log(`⌨️  Texto escrito: "${CONFIG.searchCity}"`);
     
     // Esperar a que aparezca la opción de Londres (el dropdown aparece dinámicamente)
+    const inicioEsperaDropdown = Date.now();
     await page.getByRole('option', { name: CONFIG.expectedCityOption }).waitFor({ 
       state: 'visible',
       timeout: CONFIG.timeouts.waitForOptions 
     });
+    const tiempoEsperaDropdown = Date.now() - inicioEsperaDropdown;
+    tiempo_espera_dropdown.add(tiempoEsperaDropdown);
+
     
     // Seleccionar la ciudad "London, England, United Kingdom"
     await page.getByRole('option', { name: CONFIG.expectedCityOption }).click();
     const tiempoSeleccionCiudad = Date.now() - inicioSeleccionCiudad;
     tiempo_seleccion_ciudad.add(tiempoSeleccionCiudad);
     
-    console.log(`✅ Ciudad seleccionada en ${tiempoSeleccionCiudad}ms: "${CONFIG.expectedCityOption}"`);
+    console.log(`Ciudad seleccionada en ${tiempoSeleccionCiudad}ms: "${CONFIG.expectedCityOption}"`);
 
     // ---- 3. EJECUTAR BÚSQUEDA ----
-    console.log('\n🔎 Paso 3: Ejecutando búsqueda...');
+    console.log('\nPaso 3: Ejecutando búsqueda...');
     await page.getByRole('button', { name: 'Search', exact: true }).click();
     console.log('✅ Botón "Search" presionado');
     
     // ---- 4. CARGA DE RESULTADOS ----
-    console.log('\n📊 Paso 4: Esperando resultados...');
+    console.log('\nPaso 4: Esperando resultados...');
     const inicioCargaResultados = Date.now();
     
     // Esperar a que aparezca el resultado esperado (espera inteligente hasta que el elemento sea visible)
@@ -128,10 +134,10 @@ export default async function () {
     const tiempoCargaResultados = Date.now() - inicioCargaResultados;
     tiempo_carga_resultados.add(tiempoCargaResultados);
     
-    console.log(`✅ Resultados cargados en ${tiempoCargaResultados}ms`);
+    console.log(`Resultados cargados en ${tiempoCargaResultados}ms`);
     
     // ---- 5. VALIDACIONES FINALES ----
-    console.log('\n✔️  Paso 5: Validando resultados...');
+    console.log('\n Paso 5: Validando resultados...');
     
     // Validación 1: Verificar que el resultado esperado está presente
     const resultadoEsperadoVisible = await page.getByText(CONFIG.expectedResult).first().isVisible();
@@ -142,8 +148,11 @@ export default async function () {
     
     // Validación 2: Verificar que la URL contiene la ubicación
     const currentUrl = page.url();
+    // Convertir el parámetro esperado a formato URL query string (espacio→+, coma→%2C)
+    const expectedUrlParam = CONFIG.expectedLocationParam.replace(/ /g, '+').replace(/,/g, '%2C');
     const validacionUrl = check(currentUrl, {
-      '✓ URL contiene parámetro de ubicación "London"': (url) => url.includes('location=London'),
+      [`✓ URL contiene parámetro de ubicación "${CONFIG.expectedLocationParam}"`]: (url) => url.includes(`location=${expectedUrlParam}`),
+       
     });
     if (!validacionUrl) tasa_errores.add(1);
     

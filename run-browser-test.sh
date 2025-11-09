@@ -1,18 +1,11 @@
 #!/bin/bash
 
-# Script simplificado para ejecutar k6 browser tests
+# Script para ejecutar k6 browser tests localmente
 # Uso: ./run-browser-test.sh
 
 set -e
 
-# Construir imagen personalizada si no existe
-if [[ "$(docker images -q k6-custom:latest 2> /dev/null)" == "" ]]; then
-  echo "🔨 Construyendo imagen k6 personalizada..."
-  docker build -t k6-custom:latest .
-  echo ""
-fi
-
-echo "🚀 Ejecutando k6 Browser Test..."
+echo "🚀 Ejecutando k6 Browser Test (Local)..."
 echo ""
 
 docker run --rm \
@@ -21,7 +14,7 @@ docker run --rm \
   -v "$PWD:/work" -w /work \
   --cap-add=SYS_ADMIN \
   --security-opt seccomp=unconfined \
-  k6-custom:latest \
+  grafana/k6:master-with-browser \
   run scripts/browser/holisteek_flow.browser.js
 
 echo ""
