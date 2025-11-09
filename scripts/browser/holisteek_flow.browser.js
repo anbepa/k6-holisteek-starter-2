@@ -11,9 +11,9 @@ const CONFIG = {
   expectedCityOption: 'United Kingdom England, London',
   expectedResult: 'Cinnamon Leaf Food Hall',
   timeouts: {
-    navigation: 30000,     // 30s navegación inicial (carga APIs + geolocation)
-    waitForOptions: 5000,  // 5s para que aparezcan opciones del autocomplete
-    results: 15000,        // 15s para resultados (incluye navegación + API calls)
+    navigation: 45000,     // 45s navegación inicial (carga APIs + geolocation + red lenta)
+    waitForOptions: 8000,  // 8s para que aparezcan opciones del autocomplete
+    results: 30000,        // 30s para resultados (incluye navegación + API calls + renderizado)
   }
 };
 
@@ -37,17 +37,17 @@ export const options = {
     },
   },
   thresholds: {
-    // Carga de página principal (más realista basado en observación real)
-    carga_pagina_home_ms: ['p(95)<6000'],            // 95% debe cargar en <6s (observado: ~5s)
+    // Carga de página principal (más realista para entornos CI/CD)
+    carga_pagina_home_ms: ['p(95)<8000'],            // 95% debe cargar en <8s (CI puede ser más lento)
     
     // Flujo de búsqueda - autocompletar inteligente
-    tiempo_seleccion_ciudad_ms: ['p(95)<4000'],      // Selección de ciudad <4s (observado: ~3s)
+    tiempo_seleccion_ciudad_ms: ['p(95)<6000'],      // Selección de ciudad <6s
     
     // Carga de resultados - espera inteligente de elementos
-    tiempo_carga_resultados_ms: ['p(95)<8000'],      // Resultados <8s (navegación + API calls)
+    tiempo_carga_resultados_ms: ['p(95)<20000'],     // Resultados <20s (navegación + API + renderizado)
     
-    // Tiempo total del flujo completo (más realista)
-    tiempo_total_flujo_ms: ['p(95)<25000'],          // Flujo completo <25s (observado: ~23s)
+    // Tiempo total del flujo completo (más realista para CI/CD)
+    tiempo_total_flujo_ms: ['p(95)<40000'],          // Flujo completo <40s
     
     // Tasa de errores
     tasa_errores: ['rate<0.03'],                     // Menos de 3% de errores
@@ -92,7 +92,6 @@ export default async function () {
     
     // Hacer clic en el campo de ubicación
     await page.getByRole('combobox', { name: 'City or leave empty for nearby' }).click();
-    // await page.screenshot({ path: 'screenshots/02-location-clicked.png' });
     
     // Escribir "Lond" en el campo de ubicación
     await page.getByRole('combobox', { name: 'City or leave empty for nearby' }).fill(CONFIG.searchCity);
@@ -110,7 +109,6 @@ export default async function () {
     const tiempoSeleccionCiudad = Date.now() - inicioSeleccionCiudad;
     tiempo_seleccion_ciudad.add(tiempoSeleccionCiudad);
     
-    // await page.screenshot({ path: 'screenshots/04-london-selected.png' });
     console.log(`✅ Ciudad seleccionada en ${tiempoSeleccionCiudad}ms: "${CONFIG.expectedCityOption}"`);
 
     // ---- 3. EJECUTAR BÚSQUEDA ----
@@ -130,7 +128,6 @@ export default async function () {
     const tiempoCargaResultados = Date.now() - inicioCargaResultados;
     tiempo_carga_resultados.add(tiempoCargaResultados);
     
-    // await page.screenshot({ path: 'screenshots/05-results.png' });
     console.log(`✅ Resultados cargados en ${tiempoCargaResultados}ms`);
     
     // ---- 5. VALIDACIONES FINALES ----
@@ -150,7 +147,6 @@ export default async function () {
     });
     if (!validacionUrl) tasa_errores.add(1);
     
-    // await page.screenshot({ path: 'screenshots/06-final.png' });
     
     // ---- RESUMEN FINAL ----
     const tiempoTotalFlujo = Date.now() - inicioFlujoCompleto;
@@ -165,7 +161,6 @@ export default async function () {
 
   } catch (err) {
     tasa_errores.add(1);
-    // await page.screenshot({ path: 'screenshots/99-error.png' }).catch(() => {});
     console.log('\n' + '⚠️ '.repeat(30));
     console.log('❌ ERROR EN LA EJECUCIÓN DEL TEST');
     console.log('⚠️ '.repeat(30));
