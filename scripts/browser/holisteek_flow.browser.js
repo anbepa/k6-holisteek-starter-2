@@ -11,9 +11,9 @@ const CONFIG = {
   expectedCityOption: 'United Kingdom England, London',
   expectedResult: 'Cinnamon Leaf Food Hall',
   timeouts: {
-    navigation: 60000,    // 60 segundos para navegación
-    suggestions: 2000,    // 2 segundos para sugerencias
-    results: 20000,       // 20 segundos para resultados
+    navigation: 30000,     // 30s navegación inicial (carga APIs + geolocation)
+    waitForOptions: 5000,  // 5s para que aparezcan opciones del autocomplete
+    results: 15000,        // 15s para resultados (incluye navegación + API calls)
   }
 };
 
@@ -37,23 +37,23 @@ export const options = {
     },
   },
   thresholds: {
-    // Carga de página principal
-    carga_pagina_home_ms: ['p(95)<20000'],           // 95% debe cargar en <20s
+    // Carga de página principal (más realista basado en observación real)
+    carga_pagina_home_ms: ['p(95)<6000'],            // 95% debe cargar en <6s (observado: ~5s)
     
-    // Flujo de búsqueda (escribir ciudad + seleccionar)
-    tiempo_seleccion_ciudad_ms: ['p(95)<5000'],      // Selección de ciudad <5s
+    // Flujo de búsqueda - autocompletar inteligente
+    tiempo_seleccion_ciudad_ms: ['p(95)<4000'],      // Selección de ciudad <4s (observado: ~3s)
     
-    // Carga de resultados de búsqueda
-    tiempo_carga_resultados_ms: ['p(95)<20000'],     // Resultados <20s
+    // Carga de resultados - espera inteligente de elementos
+    tiempo_carga_resultados_ms: ['p(95)<8000'],      // Resultados <8s (navegación + API calls)
     
-    // Tiempo total del flujo completo
-    tiempo_total_flujo_ms: ['p(95)<45000'],          // Flujo completo <45s
+    // Tiempo total del flujo completo (más realista)
+    tiempo_total_flujo_ms: ['p(95)<25000'],          // Flujo completo <25s (observado: ~23s)
     
     // Tasa de errores
-    tasa_errores: ['rate<0.05'],                     // Menos de 5% de errores
+    tasa_errores: ['rate<0.03'],                     // Menos de 3% de errores
     
     // Checks de validación
-    checks: ['rate>0.95'],                           // 95% de validaciones exitosas
+    checks: ['rate>0.97'],                           // 97% de validaciones exitosas
   },
   summaryTrendStats: ['avg', 'p(90)', 'p(95)', 'max'],
 };
@@ -99,8 +99,11 @@ export default async function () {
     // await page.screenshot({ path: 'screenshots/03-lond-typed.png' });
     console.log(`⌨️  Texto escrito: "${CONFIG.searchCity}"`);
     
-    // Esperar a que aparezcan las sugerencias
-    await page.waitForTimeout(CONFIG.timeouts.suggestions);
+    // Esperar a que aparezca la opción de Londres (el dropdown aparece dinámicamente)
+    await page.getByRole('option', { name: CONFIG.expectedCityOption }).waitFor({ 
+      state: 'visible',
+      timeout: CONFIG.timeouts.waitForOptions 
+    });
     
     // Seleccionar la ciudad "London, England, United Kingdom"
     await page.getByRole('option', { name: CONFIG.expectedCityOption }).click();
@@ -119,8 +122,11 @@ export default async function () {
     console.log('\n📊 Paso 4: Esperando resultados...');
     const inicioCargaResultados = Date.now();
     
-    // Esperar a que aparezca el resultado esperado
-    await page.getByText(CONFIG.expectedResult).first().waitFor({ timeout: CONFIG.timeouts.results });
+    // Esperar a que aparezca el resultado esperado (espera inteligente hasta que el elemento sea visible)
+    await page.getByText(CONFIG.expectedResult).first().waitFor({ 
+      state: 'visible',
+      timeout: CONFIG.timeouts.results 
+    });
     const tiempoCargaResultados = Date.now() - inicioCargaResultados;
     tiempo_carga_resultados.add(tiempoCargaResultados);
     
