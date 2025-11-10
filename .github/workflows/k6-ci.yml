@@ -16,8 +16,8 @@ on:
         required: true
         default: 'true'
   # Programa automático para ejecutar tests cada 2 horas
-  schedule:
-    - cron: "0 */2 * * *"  # Cada 2 horas (00:00, 02:00, 04:00, 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 UTC)
+  #schedule:
+   # - cron: "0 */2 * * *"  # Cada 2 horas (00:00, 02:00, 04:00, 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 UTC)
   # Ejecutar en cada push/PR
   push:
     branches: [ main, master, develop ]
